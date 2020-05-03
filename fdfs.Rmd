@@ -9,7 +9,7 @@ output: html_document
    
 Is restecg (resting ECG) different based on disease status? (Is there a significant difference in restecg between diseased and non-diseased groups?)
 
-### Distribution of ca based on target groups(disease status)
+### Distribution of restecg based on target groups(disease status)
 
 ```{r}
 summary(new_heart$restecg)
@@ -20,23 +20,61 @@ new_heart %>%
   summary_factorlist(dependent = "target_dummy", explanatory = "restecg", add_dependent_label = T, cont_cut = 1)
 ```
   
-The prevalences of fixed and reversible defects in the disease group are **79.4** and **3.8%** respectively.  
-     
+The prevalence of probable or definite left ventricular hypertrophy (LVH) is **41.9** and in the disease group versus **57.4%** in the no disease group.  
+  
+The prevalence of ST-T wave abnormality is **0.6** in the disease group versus **2.2** in the no disease group.  
+  
 ```{r}
 new_heart %>%
-  ggplot(aes(x = thal, fill = thal)) +
+  ggplot(aes(x = restecg, fill = restecg)) +
   geom_bar() +
-  labs(fill= "Thal") +
+  labs(fill= "Resting ECG") +
   facet_wrap(~ target_dummy) +
   theme_economist()
 ```
    
 ### Performing statistical tests  
    
-Chi-square test  
-  
+Chi-square test is incorrect in this case, so Fisher's exact test will be used instead.  
+
 ```{r}
-chisq.test(new_heart$thal, target_dummy , correct = F)
+fisher.test(new_heart$restecg, target_dummy)
 ```
    
-The p-value of Chi-square test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and thal.  
+The p-value of Fisher's exact test is **significant(0.005866)**, so we **reject** the null hypothesis of no association between disease status and resting ECG.  
+
+## 10 - Slope
+   
+Is slope (the slope of the peak exercise ST segment) different based on disease status? (Is there a significant difference in slope between diseased and non-diseased groups?)
+
+### Distribution of slope based on target groups(disease status)
+
+```{r}
+summary(new_heart$slope)
+```
+  
+```{r}
+new_heart %>%
+  summary_factorlist(dependent = "target_dummy", explanatory = "slope", add_dependent_label = T, cont_cut = 1)
+```
+  
+The prevalence of upsloping versus downsloping ST segment in the disease group is **64.4** versus **5.6%**, and in the no disease group is **25.7** versus **8.8**.  
+  
+```{r}
+new_heart %>%
+  ggplot(aes(x = slope, fill = slope)) +
+  geom_bar() +
+  labs(fill= "Slope of peak exercise ST segment") +
+  facet_wrap(~ target_dummy) +
+  theme_economist()
+```
+   
+### Performing statistical tests  
+   
+Chi-square test   
+
+```{r}
+chisq.test(new_heart$restecg, target_dummy, correct = F)
+```
+   
+The p-value of Chi-square test is **significant(0.009743)**, so we **reject** the null hypothesis of no association between disease status and slope.  
