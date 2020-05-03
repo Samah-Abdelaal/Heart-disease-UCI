@@ -1,0 +1,42 @@
+---
+title: "Heart-Disease"
+author: "Samah Abdelaal"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## 9 - Restecg
+   
+Is restecg (resting ECG) different based on disease status? (Is there a significant difference in restecg between diseased and non-diseased groups?)
+
+### Distribution of ca based on target groups(disease status)
+
+```{r}
+summary(new_heart$restecg)
+```
+  
+```{r}
+new_heart %>%
+  summary_factorlist(dependent = "target_dummy", explanatory = "restecg", add_dependent_label = T, cont_cut = 1)
+```
+  
+The prevalences of fixed and reversible defects in the disease group are **79.4** and **3.8%** respectively.  
+     
+```{r}
+new_heart %>%
+  ggplot(aes(x = thal, fill = thal)) +
+  geom_bar() +
+  labs(fill= "Thal") +
+  facet_wrap(~ target_dummy) +
+  theme_economist()
+```
+   
+### Performing statistical tests  
+   
+Chi-square test  
+  
+```{r}
+chisq.test(new_heart$thal, target_dummy , correct = F)
+```
+   
+The p-value of Chi-square test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and thal.  

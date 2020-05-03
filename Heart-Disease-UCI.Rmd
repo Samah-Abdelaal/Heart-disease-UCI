@@ -51,6 +51,23 @@ thal_reves <- ifelse(heart$thal==3, "1", "0")
 
 target_dummy <- ifelse(heart$target==1, "disease", "no disease")
 
+heart$cp <- case_when(heart$cp==0 ~ "asymptomatic",
+                      heart$cp==1 ~ "atypical angina",
+                      heart$cp==2 ~ "non-anginal pain",
+                      TRUE ~ "typical angina")
+
+heart$restecg <- case_when(heart$restecg==0 ~ "LVH",
+                           heart$restecg==1 ~ "normal",
+                           TRUE ~ "ST")
+
+heart$slope <- case_when(heart$slope==0 ~ "downsloping",
+                         heart$slope==1 ~ "flat",
+                         TRUE ~ "upsloping")
+
+heart$thal <- case_when(heart$thal==1 ~ "reversible",
+                        heart$thal==2 ~ "fixed",
+                        TRUE ~ "normal")
+
 new_heart <- cbind(heart, sex_dummy, cpasym, cpatyp, cpnon_ang, cptyp, fbs_dummy, restecg_notnorm, restecg_norm, restecg_abnor, exang_dummy, slope_down, slope_flat, slope_up, thal_zero, thal_nor, thal_fixed, thal_reves, target_dummy)
 
 write_csv(new_heart, "Data/new_heart.csv")
@@ -289,7 +306,7 @@ wilcox.test(new_heart$trestbps ~ new_heart$target_dummy, mu=0, alternative = "tw
   
 The p-value of Wilcoxon rank sum test is **significant(0.02918)**, so we **reject** the null hypothesis of no difference in RBP between diseased and not diseased.
       
-## 4- chol : Serum Cholesterol
+## 5- chol : Serum Cholesterol
 
 Is serum cholesterol different based on disease status? (Is there a significant difference in serum cholesterol between diseased and non-diseased groups?)
 
@@ -368,7 +385,7 @@ wilcox.test(new_heart$chol ~ new_heart$target_dummy, mu=0, alternative = "two.si
   
 The p-value of Wilcoxon rank sum test is **not significant(0.05563)**, so we **reject** the null hypothesis of no difference in serum cholesterol between diseased and not diseased.
             
-## 5- thalach : Maximum Heart Rate Achieved
+## 6- thalach : Maximum Heart Rate Achieved
 
 Is the maximum heart rate different based on disease status? (Is there a significant difference in maximum heart rate between diseased and non-diseased groups?)
 
@@ -481,7 +498,7 @@ summary(new_heart$oldpeak)
 ```
   
    
-The oldpeak of the sample ranges from **0** to **6.2** years old.The value of the mean is higher than that of the median, suggesting the distribution is right-skewed.   
+The oldpeak of the sample ranges from **0** to **6.2**.The value of the mean is higher than that of the median, suggesting the distribution is right-skewed.   
     
 Confirming with histogram:   
   
@@ -522,31 +539,29 @@ The p-value of Wilcoxon rank sum test is **highly significant(7.574e-13)**, so w
   
    
 ## 8- ca : number of major vessels (0-3) colored by flourosopy
-
+  
 Is ca : number of major vessels (0-3) colored by flourosopy different based on disease status? (Is there a significant difference in oldpeak between diseased and non-diseased groups?)
-
+  
 ### Distribution of ca based on target groups(disease status)
-
+  
+It does not make much sense to deal with ca as a numerical variable since it can only have 4 values (0,1,2,3) and no decimals, so it will be analyzed as a factor.
+  
 ```{r}
+new_heart$ca <- as.factor(new_heart$ca)
 summary(new_heart$ca)
 ```
   
-It does not make much sense to deal with ca as a numerical variable since it can only have 4 values (0,1,2,3) and no decimals, so it will be analyzed as a factor.  
-  
-```{r}
-new_heart$ca2 <- as.factor(new_heart$ca)
-```
 
 ```{r}
 new_heart %>%
-  summary_factorlist(dependent = "ca2", explanatory = "target_dummy", add_dependent_label = T, cont_cut = 1)
+  summary_factorlist(dependent = "target_dummy", explanatory = "ca", add_dependent_label = T, cont_cut = 1)
 ```
   
-The disease prevalence is **74.6, 32.3, 18.4%** in the group with (0, 1, 2) vessels colored by flouroscopy respectively.  
+The prevalence of having zero, one, two, and three vessels colored by flouroscopy in the disease group is **80.6**, **13.1**, **4.4**, and **1.9%** respectively.  
      
 ```{r}
 new_heart %>%
-  ggplot(aes(x = ca2, fill = ca2)) +
+  ggplot(aes(x = ca, fill = ca)) +
   geom_bar() +
   labs(fill= "number of major vessels colored by flourosopy") +
   facet_wrap(~ target_dummy) +
@@ -555,17 +570,17 @@ new_heart %>%
    
 ### Performing statistical tests  
    
-Chi-square test  
+Chi-square test is incorrect in this case, so Fisher's exact test will be used instead.
   
 ```{r}
-chisq.test(new_heart$ca2, target_dummy , correct = F)
+fisher.test(new_heart$ca, target_dummy)
 ```
    
-The p-value of Chi-square test is **significant(7.996e-16)**, so we **reject** the null hypothesis of no association between disease status and number of major vessels colored by flouroscopy.  
+The p-value of Fisher's exact test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and number of major vessels colored by flouroscopy.  
 
-## 9 - Thal
+## 11 - Thal
    
-Is ca : number of major vessels (0-3) colored by flourosopy different based on disease status? (Is there a significant difference in oldpeak between diseased and non-diseased groups?)
+Is thal different based on disease status? (Is there a significant difference in thal between diseased and non-diseased groups?)
 
 ### Distribution of ca based on target groups(disease status)
 
@@ -573,24 +588,18 @@ Is ca : number of major vessels (0-3) colored by flourosopy different based on d
 summary(new_heart$thal)
 ```
   
-It does not make much sense to deal with thal as a numerical variable since it can only have 4 values (0,1,2,3) and no decimals, so it will be analyzed as a factor.  
-  
-```{r}
-new_heart$thal2 <- as.factor(new_heart$thal)
-```
-
 ```{r}
 new_heart %>%
-  summary_factorlist(dependent = "target_dummy", explanatory = "thal2", add_dependent_label = T, cont_cut = 1)
+  summary_factorlist(dependent = "target_dummy", explanatory = "thal", add_dependent_label = T, cont_cut = 1)
 ```
   
-The disease prevalence **is 53.5%** in the high FBS group(>120 mg/dl) and **54.2%** in the low FBS group(<120 mg/dl).  
+The prevalences of fixed and reversible defects in the disease group are **79.4** and **3.8%** respectively.  
      
 ```{r}
 new_heart %>%
-  ggplot(aes(x = thal2, fill = thal2)) +
+  ggplot(aes(x = thal, fill = thal)) +
   geom_bar() +
-  labs(fill= "???") +
+  labs(fill= "Thal") +
   facet_wrap(~ target_dummy) +
   theme_economist()
 ```
@@ -600,7 +609,7 @@ new_heart %>%
 Chi-square test  
   
 ```{r}
-chisq.test(new_heart$thal2, target_dummy , correct = F)
+chisq.test(new_heart$thal, target_dummy , correct = F)
 ```
    
-The p-value of Chi-square test is **not significant(0.9358)**, so we **fail to reject** the null hypothesis of no difference in disease status between high and low FBS groups.  
+The p-value of Chi-square test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and thal.  
