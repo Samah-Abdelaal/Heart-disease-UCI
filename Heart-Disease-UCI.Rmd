@@ -608,8 +608,7 @@ new_heart %>%
    
 ### Performing statistical tests  
    
-Chi-square test is incorrect in this case, so Fisher's exact test will be used instead.  
-
+Chi-square test is incorrect in this case, so Fisher's exact test will be used instead.   
 ```{r}
 fisher.test(new_heart$restecg, target_dummy)
 ```
@@ -647,10 +646,10 @@ new_heart %>%
 Chi-square test   
 
 ```{r}
-chisq.test(new_heart$restecg, target_dummy, correct = F)
+chisq.test(new_heart$slope, target_dummy, correct = F)
 ```
    
-The p-value of Chi-square test is **significant(0.009743)**, so we **reject** the null hypothesis of no association between disease status and slope.  
+The p-value of Chi-square test is **significant(2.116e-10)**, so we **reject** the null hypothesis of no association between disease status and slope.  
   
 ## 11 - Thal
    
@@ -687,3 +686,77 @@ chisq.test(new_heart$thal, target_dummy , correct = F)
 ```
    
 The p-value of Chi-square test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and thal.  
+  
+## 12 - Cp
+   
+Is cp (chest pain type) different based on disease status? (Is there a significant difference in chest pain type between diseased and non-diseased groups?)
+
+### Distribution of cp based on target groups(disease status)
+
+```{r}
+summary(new_heart$cp)
+```
+  
+```{r}
+new_heart %>%
+  summary_factorlist(dependent = "target_dummy", explanatory = "cp", add_dependent_label = T, cont_cut = 1)
+```
+  
+The prevalence of typical angina, atypical angina and non-angina in the disease group is **10%**, **25%** and **40.6%** in the disease group versus **5.1%**, **6.6%** and **13.2%** in the no disease group.  
+  
+```{r}
+new_heart %>%
+  ggplot(aes(x = cp, fill = cp)) +
+  geom_bar() +
+  labs(fill= "Chest pain type") +
+  facet_wrap(~ target_dummy) +
+  theme_economist() +
+  theme(axis.text.x = element_text(angle = 45,
+                                   vjust = 0.6))
+```
+   
+### Performing statistical tests  
+   
+Chi-square test    
+
+```{r}
+chisq.test(new_heart$cp, target_dummy)
+```
+   
+The p-value of Chi-square test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and chest pain type.  
+
+## 13 - Exang
+   
+Is exang (exercise-induced angina) different based on disease status? (Is there a significant difference in exercise-induced angina between diseased and non-diseased groups?)
+
+### Distribution of exang based on target groups(disease status)
+
+```{r}
+summary(new_heart$exang_dummy)
+```
+  
+```{r}
+new_heart %>%
+  summary_factorlist(dependent = "target_dummy", explanatory = "exang_dummy", add_dependent_label = T, cont_cut = 1)
+```
+  
+The prevalence of exercise-induced angina in the disease group is **14.4** versus **54.4%** in the no disease group.   
+   
+```{r}
+new_heart %>%
+  ggplot(aes(x = exang_dummy, fill = exang_dummy)) +
+  geom_bar() +
+  labs(fill= "Exercise induced angina") +
+  facet_wrap(~ target_dummy) +
+  theme_economist()
+```
+   
+### Performing statistical tests  
+   
+Chi-square test   
+
+```{r}
+chisq.test(new_heart$exang_dummy, target_dummy, correct = F)
+```
+   
+The p-value of Chi-square test is **significant(2.604e-13)**, so we **reject** the null hypothesis of no association between disease status and exercise-induced angina.  
