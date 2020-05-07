@@ -4,8 +4,8 @@ author: "Samah Abdelaal"
 date: "11/24/2019"
 output: word_document
 ---
-Setup
-
+Setup  
+  
 ```{r}
 library(tidyverse)
 library(knitr)
@@ -15,15 +15,15 @@ library(ggthemes)
 library(corrplot)
 library(Greg)
 ```
-Load data
-
+Load data  
+  
 ```{r}
 heart <- read_csv("Raw Data/heart.csv")
 str(heart)
 ```
-
-Data manipulation : setting up variables
-
+  
+Data manipulation : setting up variables  
+  
 ```{r}
 sex_dummy <- ifelse(heart$sex==1, "male" , "female")
 
@@ -72,42 +72,79 @@ new_heart <- cbind(heart, sex_dummy, cpasym, cpatyp, cpnon_ang, cptyp, fbs_dummy
 
 write_csv(new_heart, "Data/new_heart.csv")
 ```
-
+  
 ```{r}
 new_heart <- read.csv("Data/new_heart.csv")
 attach(new_heart)
 ```
-
+  
 Data Summarization
-
+  
 ```{r}
+dim(new_heart)
+
 summary(new_heart)
+
+table(sex_dummy)
+
+count(new_heart, target_dummy)
 ```
-
-, with sex composition of **207** males vs **96** females.  
-
-
-# Analysis of Variables
-
-## 1- Age
-
-Is the age distribution different based on disease status? (Is there a significant difference in age between diseased and non-diseased groups?)
-
-### Distribution of age based on target groups(disease status)
-
+  
+The sample size is 296 participants, **201** males and **95** females.  
+The sample is divided into **160** with heart disease and **136** with no disease.  
+    
+# Exploratory Analysis of Variables  
+  
+## 1- Age  
+  
+### Checking assumptions of normality in age variable  
+  
 ```{r}
 summary(new_heart$age)
 ```
-
+   
+The age of the sample ranges from **29** to **77** years old.The value of the age mean is slightly less than that of the age median, suggesting the distribution is left-skewed.   
+    
+Confirming with histogram:   
+   
+```{r}
+hist(new_heart$age, col = "cadetblue")
+```
+   
+```{r}
+library(moments)
+```
+```{r}
+skewness(new_heart$age)
+```
+    
+Skewness value is negative(left-skewed)  
+   
+```{r}
+kurtosis(new_heart$age)
+```
+   
+Since kurtosis value is less than 3 (value of the normal distribution curve), The distribution is platykurtic.   
+   
+```{r}
+shapiro.test(new_heart$age)
+```
+   
+The p-value of Shapiro test is less than 0.05(0.006045), therefore the normality assumption is violated, age is **not normally distributed** and parametric tests cannot be applied.   
+   
+### Distribution of age based on target groups(disease status)  
+   
+Is the age distribution different based on disease status? (Is there a significant difference in age between diseased and non-diseased groups?)  
+   
 ```{r}
 new_heart %>%
   group_by(target_dummy) %>%
-  summarise(count = n(), mean = mean(age), sd = sd(age), var = var(age))
+  summarise(mean = mean(age), sd = sd(age),
+            median = median(age), IQR = IQR(age))
 ```
+   
+Median (IQR) of age in the diseased group is **52 (14.25)** versus **58 (9.25)** years old in the non-diseased group.  
   
-**165** of the sample is diseased vs **138** with no disease.
-Mean age in the diseased group is **52.6±9.55** vs **56.7±7.92** in the non-diseased group.  
-
 ```{r}
 new_heart %>%
   ggplot(aes(x= age, fill= age)) +
@@ -116,161 +153,94 @@ new_heart %>%
   theme_classic()
 ```
 ```{r}
-boxplot(formula = age ~ target_dummy, data = new_heart)
+boxplot(formula = age ~ target_dummy, data = new_heart,
+        col = "turquoise3")
 ```
-
-### Checking assumptions of normality in age variable
-
-```{r}
-summary(new_heart$age)
-```
-  
    
-The age of the sample ranges from **29** to **77** years old.The value of the age mean is slightly less than that of the age median, suggesting the distribution is left-skewed.   
-    
-Confirming with histogram:   
-  
-```{r}
-hist(new_heart$age, col = "cadetblue")
-```
-  
-```{r}
-library(moments)
-```
-```{r}
-skewness(new_heart$age)
-```
-  
-Skewness value is negative(left-skewed)  
-  
-```{r}
-kurtosis(new_heart$age)
-```
-  
-Since kurtosis value is less than 3 (value of the normal distribution curve), The distribution is platykurtic.  
-  
-```{r}
-shapiro.test(new_heart$age)
-```
-  
-The p-value of Shapiro test is less than 0.05(0.006045), therefore the normality assumption is violated, age is **not normally distributed** and parametric tests cannot be applied.  
-  
-### Performing statistical tests  
-  
-Wilcoxon rank sum test  
-  
+### Performing statistical tests   
+   
+Wilcoxon rank sum test   
+   
 ```{r}
 wilcox.test(new_heart$age ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
 ```
-  
-The p-value of Wilcoxon rank sum test is **highly significant(4.314e-05)**, so we **reject** the null hypothesis of no difference in age between diseased and not diseased.
-  
-## 2- Sex
-  
-Is the sex distribution different based on disease status? (Is there a significant difference in sex between diseased and non-diseased groups?)
-  
-### Distribution of age based on target groups(disease status)
-  
+    
+The p-value of Wilcoxon rank sum test is **highly significant(4.314e-05)**, so we **reject** the null hypothesis of no difference in age between diseased and not diseased.  
+   
+## 2- Sex  
+   
+Is the sex distribution different based on disease status? (Is there a significant difference in sex between diseased and non-diseased groups?)  
+   
+### Distribution of sex based on target groups(disease status)  
+   
 ```{r}
 new_heart %>%
-  summary_factorlist(dependent = "sex_dummy", explanatory = "target_dummy", add_dependent_label = T, cont_cut = 1)
+  summary_factorlist(dependent = "target_dummy", explanatory = "sex_dummy", add_dependent_label = T, cont_cut = 1)
 ```
    
-The disease is more common in females than males(**74.7%** versus **44.3%** respectively).  
+**55.6%** of the diseased group is male, versus **82.4%** of the no disease group.   
    
 ```{r}
 new_heart %>%
-  ggplot(aes(x = target_dummy, fill = target_dummy)) +
+  ggplot(aes(x = sex_dummy, fill = sex_dummy)) +
   geom_bar() +
-  labs(fill= "Disease Status") +
-  facet_wrap(~ sex_dummy) +
+  labs(fill= "Gender") +
+  facet_wrap(~ target_dummy) +
   theme_wsj()
 ```
    
-### Performing statistical tests  
+### Performing statistical tests   
    
 Chi-square test  
-  
+   
 ```{r}
 chisq.test(target_dummy, sex_dummy, correct = F)
 ```
    
-The p-value of Chi-square test is **highly significant(9.161e-07)**, so we **reject** the null hypothesis of no difference in sex between diseased and not diseased.  
+The p-value of Chi-square test is **highly significant(9.161e-07)**, so we **reject** the null hypothesis of no difference in sex between diseased and not diseased.   
    
-## 3- FBS : fasting blood sugar
+## 3- FBS : fasting blood sugar  
    
 Is the disease status different based on fasting blood sugar(FBS)? (Is there a significant difference in disease status between high and low FBS groups?)  
-  
+   
 ```{r}
 new_heart %>%
-  summary_factorlist(dependent = "fbs_dummy", explanatory = "target_dummy", add_dependent_label = T, cont_cut = 1)
+  summary_factorlist(dependent = "target_dummy", explanatory = "fbs_dummy", add_dependent_label = T, cont_cut = 1)
 ```
-  
-The disease prevalence **is 53.5%** in the high FBS group(>120 mg/dl) and **54.2%** in the low FBS group(<120 mg/dl).  
-     
+   
+**14.4%** of the disease group are in the high FBS group, versus **14.7%** of the no disease group.   
+   
 ```{r}
 new_heart %>%
-  ggplot(aes(x = target_dummy, fill = target_dummy)) +
+  ggplot(aes(x = fbs_dummy, fill = fbs_dummy)) +
   geom_bar() +
-  labs(fill= "Disease Status") +
-  facet_wrap(~ fbs_dummy) +
+  labs(fill= "Fasting Blood Sugar") +
+  facet_wrap(~ target_dummy) +
   theme_wsj()
 ```
    
-### Performing statistical tests  
+### Performing statistical tests   
    
 Chi-square test  
-  
+   
 ```{r}
 chisq.test(target_dummy, fbs_dummy, correct = F)
 ```
    
 The p-value of Chi-square test is **not significant(0.9358)**, so we **fail to reject** the null hypothesis of no difference in disease status between high and low FBS groups.  
    
-## 4- trestbps : Resting Blood Pressure RBP
-
-Is resting blood pressure different based on disease status? (Is there a significant difference in resting blood pressure between diseased and non-diseased groups?)
-
-### Distribution of RBP based on target groups(disease status)
-
+## 4- trestbps : Resting Blood Pressure RBP  
+   
+### Checking assumptions of normality in RBP variable  
+   
 ```{r}
 summary(new_heart$trestbps)
 ```
-
-```{r}
-new_heart %>%
-  group_by(target_dummy) %>%
-  summarise(mean = mean(trestbps), sd = sd(trestbps), var = var(trestbps))
-```
-  
-Mean RBP in the diseased group is **129.2±16.4** vs **134.5±18.9** in the non-diseased group.  
-
-```{r}
-new_heart %>%
-  ggplot(aes(x= trestbps, fill= trestbps)) +
-  geom_histogram(binwidth = 3, color ="black", fill = "violetred2") +
-  facet_wrap(~target_dummy)+
-  theme_classic()
-```
-
-  
-```{r}
-boxplot(formula = trestbps ~ target_dummy, data = new_heart)
-```
-  
-There are two notable outliers in the no disease group with resting blood pressure > 180 mm Hg   
-  
-### Checking assumptions of normality in RBP variable
-
-```{r}
-summary(new_heart$trestbps)
-```
-  
    
 The RBP of the sample ranges from **94** to **200** mm Hg on admission to the hospital. The value of the mean is slightly higher than that of the median, suggesting the distribution is right-skewed.   
     
 Confirming with histogram:   
-  
+   
 ```{r}
 hist(new_heart$trestbps, col = "cadetblue2")
 ```
@@ -281,49 +251,109 @@ library(moments)
 ```{r}
 skewness(new_heart$trestbps)
 ```
-  
-Skewness value is positive(right-skewed)  
-  
+   
+Skewness value is positive(right-skewed)   
+    
 ```{r}
 kurtosis(new_heart$trestbps)
 ```
-  
-Since kurtosis value is more than 3 (value of the normal distribution curve), The distribution is leptokurtic.  
-  
+   
+Since kurtosis value is more than 3 (value of the normal distribution curve), The distribution is leptokurtic.   
+   
 ```{r}
 shapiro.test(new_heart$trestbps)
 ```
-  
+   
 The p-value of Shapiro test is less than 0.05(1.913e-06), therefore the normality assumption is violated, RBP is **not normally distributed** and parametric tests cannot be applied.  
-  
-### Performing statistical tests  
-  
-Wilcoxon rank sum test  
-  
-```{r}
-wilcox.test(new_heart$trestbps ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
-```
-  
-The p-value of Wilcoxon rank sum test is **significant(0.02918)**, so we **reject** the null hypothesis of no difference in RBP between diseased and not diseased.
-      
-## 5- chol : Serum Cholesterol
-
-Is serum cholesterol different based on disease status? (Is there a significant difference in serum cholesterol between diseased and non-diseased groups?)
-
-### Distribution of serum cholesterol based on target groups(disease status)
-
-```{r}
-summary(new_heart$chol)
-```
-
+   
+### Distribution of RBP based on target groups(disease status)   
+   
+Is resting blood pressure different based on disease status? (Is there a significant difference in resting blood pressure between diseased and non-diseased groups?)   
+   
 ```{r}
 new_heart %>%
   group_by(target_dummy) %>%
-  summarise(mean = mean(chol), sd = sd(chol), var = var(chol))
+  summarise(mean = mean(trestbps), sd = sd(trestbps),
+            median = median(trestbps), IQR = IQR(trestbps))
 ```
-  
-Mean cholesterol in the diseased group is **243.5±53.8** vs **251.5±49.7** in the non-diseased group.  
-  
+   
+Median (IQR) of RBP in the diseased group is **130 (20)** versus **130 (25)** mmHg in the non-diseased group.   
+   
+```{r}
+new_heart %>%
+  ggplot(aes(x= trestbps, fill= trestbps)) +
+  geom_histogram(binwidth = 3, color ="black", fill = "violetred2") +
+  facet_wrap(~target_dummy)+
+  theme_classic()
+```
+   
+```{r}
+boxplot(formula = trestbps ~ target_dummy, data = new_heart,
+        col = "turquoise3")
+```
+   
+There are two notable outliers in the no disease group with resting blood pressure > 180 mm Hg   
+   
+### Performing statistical tests   
+   
+Wilcoxon rank sum test  
+   
+```{r}
+wilcox.test(new_heart$trestbps ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
+```
+   
+The p-value of Wilcoxon rank sum test is **significant(0.02918)**, so we **reject** the null hypothesis of no difference in RBP between diseased and not diseased.  
+      
+## 5- chol : Serum Cholesterol   
+   
+### Checking assumptions of normality in chol variable   
+   
+```{r}
+summary(new_heart$chol)
+```
+    
+The serum cholesterol of the sample ranges from **126** to **564** mg/dl. The value of the mean is slightly higher than that of the median, suggesting the distribution is right-skewed.   
+    
+Confirming with histogram:   
+   
+```{r}
+hist(new_heart$chol, col = "cadetblue2")
+```
+     
+```{r}
+library(moments)
+```
+```{r}
+skewness(new_heart$chol)
+```
+   
+Skewness value is positive(right-skewed)   
+   
+```{r}
+kurtosis(new_heart$chol)
+```
+   
+Since kurtosis value is more than 3 (value of the normal distribution curve), The distribution is leptokurtic.   
+   
+```{r}
+shapiro.test(new_heart$chol)
+```
+   
+The p-value of Shapiro test is less than 0.05(8.986e-09), therefore the normality assumption is violated, serum cholesterol is **not normally distributed** and parametric tests cannot be applied.  
+   
+### Distribution of serum cholesterol based on target groups(disease status)   
+   
+Is serum cholesterol different based on disease status? (Is there a significant difference in serum cholesterol between diseased and non-diseased groups?)   
+   
+```{r}
+new_heart %>%
+  group_by(target_dummy) %>%
+  summarise(mean = mean(chol), sd = sd(chol),
+            median = median(chol), IQR = IQR(chol))
+```
+   
+Median (IQR) of serum cholesterol in the diseased group is **235.5 (59.5)** versus **251 (65.5)** mg/dl in the non-diseased group.  
+   
 ```{r}
 new_heart %>%
   ggplot(aes(x= chol, fill= chol)) +
@@ -331,78 +361,74 @@ new_heart %>%
   facet_wrap(~target_dummy)+
   theme_classic()
 ```
-
-  
-```{r}
-boxplot(formula = chol ~ target_dummy, data = new_heart)
-```
-  
-There are four notable outliers with serum cholesterol > 400 mg/dl, three in the diseased group and one in the no disease group.   
-  
-### Checking assumptions of normality in chol variable
-
-```{r}
-summary(new_heart$chol)
-```
-  
    
-The serum cholesterol of the sample ranges from **126** to **564** mg/dl. The value of the mean is slightly higher than that of the median, suggesting the distribution is right-skewed.   
+```{r}
+boxplot(formula = chol ~ target_dummy, data = new_heart,
+        col = "turquoise3")
+```
+   
+There are one notable outlier with serum cholesterol > 500 mg/dl in the disease group.   
+   
+### Performing statistical tests   
+   
+Wilcoxon rank sum test   
+    
+```{r}
+wilcox.test(new_heart$chol ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
+```
+   
+The p-value of Wilcoxon rank sum test is **not significant(0.05563)**, so we **reject** the null hypothesis of no difference in serum cholesterol between diseased and not diseased.   
+   
+## 6- thalach : Maximum Heart Rate Achieved  
+   
+### Checking assumptions of normality in thalach variable
+   
+```{r}
+summary(new_heart$thalach)
+```
+   
+The maximum heart rate of the sample ranges from **71** to **202** bpm. The value of the mean is slightly less than that of the median, suggesting the distribution is left-skewed.   
     
 Confirming with histogram:   
-  
+   
 ```{r}
-hist(new_heart$chol, col = "cadetblue2")
+hist(new_heart$thalach, col = "coral3")
 ```
    
 ```{r}
 library(moments)
 ```
 ```{r}
-skewness(new_heart$chol)
+skewness(new_heart$thalach)
 ```
-  
-Skewness value is positive(right-skewed)  
-  
+   
+Skewness value is negative(left-skewed)  
+   
 ```{r}
-kurtosis(new_heart$chol)
+kurtosis(new_heart$thalach)
 ```
-  
-Since kurtosis value is more than 3 (value of the normal distribution curve), The distribution is leptokurtic.  
-  
+   
+Since kurtosis value is close to 3 (value of the normal distribution curve), The distribution is mesokurtic.   
+   
 ```{r}
-shapiro.test(new_heart$chol)
+shapiro.test(new_heart$thalach)
 ```
-  
-The p-value of Shapiro test is less than 0.05(8.986e-09), therefore the normality assumption is violated, serum cholesterol is **not normally distributed** and parametric tests cannot be applied.  
-  
-### Performing statistical tests  
-  
-Wilcoxon rank sum test  
-  
-```{r}
-wilcox.test(new_heart$chol ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
-```
-  
-The p-value of Wilcoxon rank sum test is **not significant(0.05563)**, so we **reject** the null hypothesis of no difference in serum cholesterol between diseased and not diseased.
-            
-## 6- thalach : Maximum Heart Rate Achieved
-
-Is the maximum heart rate different based on disease status? (Is there a significant difference in maximum heart rate between diseased and non-diseased groups?)
-
-### Distribution of maximum heart rate based on target groups(disease status)
-
-```{r}
-summary(new_heart$thalach)
-```
-
+   
+The p-value of Shapiro test is less than 0.05(0.0001073), therefore the normality assumption is violated, maximum heart rate is **not normally distributed** and parametric tests cannot be applied.   
+   
+### Distribution of maximum heart rate based on target groups(disease status)   
+   
+Is the maximum heart rate different based on disease status? (Is there a significant difference in maximum heart rate between diseased and non-diseased groups?)   
+   
 ```{r}
 new_heart %>%
   group_by(target_dummy) %>%
-  summarise(mean = mean(thalach), sd = sd(thalach), var = var(thalach))
+  summarise(mean = mean(thalach), sd = sd(thalach),
+            median = median(thalach), IQR = IQR(thalach))
 ```
-  
-Mean maximum heart rate in the diseased group is **158.6±19.04** vs **138.9±22.72** in the non-diseased group.  
-
+   
+Median (IQR) of maximum heart rate in the diseased group is **161 (23)** versus **141.5 (31.25)** bpm in the non-diseased group.  
+   
 ```{r}
 new_heart %>%
   ggplot(aes(x= thalach, fill= thalach)) +
@@ -411,73 +437,52 @@ new_heart %>%
   theme_classic()
 ```
 ```{r}
-boxplot(formula = thalach ~ target_dummy, data = new_heart)
+boxplot(formula = thalach ~ target_dummy,
+        data = new_heart,
+        col = "turquoise3")
 ```
-
-### Checking assumptions of normality in thalach variable
-
-```{r}
-summary(new_heart$thalach)
-```
-  
    
-The maximum heart rate of the sample ranges from **71** to **202** bpm. The value of the mean is slightly less than that of the median, suggesting the distribution is left-skewed.   
-    
-Confirming with histogram:   
-  
-```{r}
-hist(new_heart$thalach, col = "coral3")
-```
-  
-```{r}
-library(moments)
-```
-```{r}
-skewness(new_heart$thalach)
-```
-  
-Skewness value is negative(left-skewed)  
-  
-```{r}
-kurtosis(new_heart$thalach)
-```
-  
-Since kurtosis value is close to 3 (value of the normal distribution curve), The distribution is mesokurtic.  
-  
-```{r}
-shapiro.test(new_heart$thalach)
-```
-  
-The p-value of Shapiro test is less than 0.05(0.0001073), therefore the normality assumption is violated, maximum heart rate is **not normally distributed** and parametric tests cannot be applied.  
-  
-### Performing statistical tests  
-  
-Wilcoxon rank sum test  
-  
+### Performing statistical tests   
+   
+Wilcoxon rank sum test   
+   
 ```{r}
 wilcox.test(new_heart$thalach ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
 ```
-  
-The p-value of Wilcoxon rank sum test is **highly significant(1.251e-13)**, so we **reject** the null hypothesis of no difference in maximum heart rate between diseased and not diseased.
    
-## 7- Oldpeak : (ST depression induced by exercise relative to rest)
-
-Is oldpeak(ST depression induced by exercise relative to rest) different based on disease status? (Is there a significant difference in oldpeak between diseased and non-diseased groups?)
-
-### Distribution of oldpeak based on target groups(disease status)
-
+The p-value of Wilcoxon rank sum test is **highly significant(1.251e-13)**, so we **reject** the null hypothesis of no difference in maximum heart rate between diseased and not diseased.   
+   
+## 7- Oldpeak : (ST depression induced by exercise relative to rest)   
+   
+### Checking assumptions of normality in oldpeak variable   
+   
 ```{r}
 summary(new_heart$oldpeak)
 ```
-
+   
+The oldpeak of the sample ranges from **0** to **6.2**.The value of the mean is higher than that of the median, suggesting the distribution is right-skewed.   
+    
+Confirming with histogram:   
+   
+```{r}
+hist(new_heart$oldpeak, col = "salmon")
+```
+   
+Oldpeak is clearly **not normally distributed** and parametric tests cannot be applied.  
+    
+### Distribution of oldpeak based on target groups(disease status)   
+   
+Is oldpeak (ST depression induced by exercise relative to rest) different based on disease status? (Is there a significant difference in oldpeak between diseased and non-diseased groups?)   
+   
 ```{r}
 new_heart %>%
   group_by(target_dummy) %>%
-  summarise(mean = mean(oldpeak), sd = sd(oldpeak), var = var(oldpeak))
+  summarise(mean = mean(oldpeak), sd = sd(oldpeak),
+            median = median(oldpeak), IQR = IQR(oldpeak))
 ```
-  
-Mean oldpeak in the diseased group is **0.6±0.79** vs **1.6±1.3** in the non-diseased group.  
-
+   
+Median (IQR) oldpeak in the diseased group is **0.2 (1.1)** versus **1.4 (1.9)** in the non-diseased group.   
+   
 ```{r}
 new_heart %>%
   ggplot(aes(x= oldpeak, fill= oldpeak)) +
@@ -486,78 +491,42 @@ new_heart %>%
   theme_classic()
 ```
 ```{r}
-boxplot(formula = oldpeak ~ target_dummy, data = new_heart)
+boxplot(formula = oldpeak ~ target_dummy,
+        data = new_heart,
+        col = "turquoise3")
 ```
-  
-There are two notable outliers with ST depression > 5 in the no disease group.  
-  
-### Checking assumptions of normality in oldpeak variable
-
-```{r}
-summary(new_heart$oldpeak)
-```
-  
    
-The oldpeak of the sample ranges from **0** to **6.2**.The value of the mean is higher than that of the median, suggesting the distribution is right-skewed.   
+There are two notable outliers with ST depression > 5 in the no disease group.   
+   
+### Performing statistical tests   
     
-Confirming with histogram:   
-  
-```{r}
-hist(new_heart$oldpeak, col = "salmon")
-```
-  
-```{r}
-library(moments)
-```
-```{r}
-skewness(new_heart$oldpeak)
-```
-  
-Skewness value is positive(right-skewed)  
-  
-```{r}
-kurtosis(new_heart$oldpeak)
-```
-  
-Since kurtosis value is more than 3 (value of the normal distribution curve), The distribution is leptokurtic.  
-  
-```{r}
-shapiro.test(new_heart$oldpeak)
-```
-  
-The p-value of Shapiro test is less than 0.05(2.501e-16), therefore the normality assumption is violated, oldpeak is **not normally distributed** and parametric tests cannot be applied.  
-  
-### Performing statistical tests  
-  
-Wilcoxon rank sum test  
-  
+Wilcoxon rank sum test   
+    
 ```{r}
 wilcox.test(new_heart$oldpeak ~ new_heart$target_dummy, mu=0, alternative = "two.sided", conf.level= 0.95, var.equal = F)
 ```
+    
+The p-value of Wilcoxon rank sum test is **highly significant(7.574e-13)**, so we **reject** the null hypothesis of no difference in oldpeak between diseased and not diseased.  
+    
+## 8- ca : number of major vessels (0-3) colored by flourosopy   
+    
+Is ca : number of major vessels (0-3) colored by flourosopy different based on disease status? (Is there a significant difference in oldpeak between diseased and non-diseased groups?)  
   
-The p-value of Wilcoxon rank sum test is **highly significant(7.574e-13)**, so we **reject** the null hypothesis of no difference in oldpeak between diseased and not diseased.
+### Distribution of ca based on target groups(disease status)  
   
-   
-## 8- ca : number of major vessels (0-3) colored by flourosopy
-  
-Is ca : number of major vessels (0-3) colored by flourosopy different based on disease status? (Is there a significant difference in oldpeak between diseased and non-diseased groups?)
-  
-### Distribution of ca based on target groups(disease status)
-  
-It does not make much sense to deal with ca as a numerical variable since it can only have 4 values (0,1,2,3) and no decimals, so it will be analyzed as a factor.
+It does not make much sense to deal with ca as a numerical variable since it can only have 4 values (0,1,2,3) and no decimals, so it will be analyzed as a factor.  
   
 ```{r}
 new_heart$ca <- as.factor(new_heart$ca)
 summary(new_heart$ca)
 ```
   
-
 ```{r}
 new_heart %>%
   summary_factorlist(dependent = "target_dummy", explanatory = "ca", add_dependent_label = T, cont_cut = 1)
 ```
   
-The prevalence of having zero, one, two, and three vessels colored by flouroscopy in the disease group is **80.6**, **13.1**, **4.4**, and **1.9%** respectively.  
+The prevalence of having zero, one, two, and three vessels colored by flouroscopy in the disease group is **80.6**, **13.1**, **4.4**, and **1.9%** respectively, versus **32.4**, **32.4**, **22.8**, and **12.5%** in the no disease group.  
      
 ```{r}
 new_heart %>%
@@ -567,19 +536,19 @@ new_heart %>%
   facet_wrap(~ target_dummy) +
   theme_economist()
 ```
-   
+    
 ### Performing statistical tests  
-   
-Chi-square test is incorrect in this case, so Fisher's exact test will be used instead.
+    
+Chi-square test is incorrect in this case, so Fisher's exact test will be used instead.  
   
 ```{r}
 fisher.test(new_heart$ca, target_dummy)
 ```
-   
+    
 The p-value of Fisher's exact test is **significant(< 2.2e-16)**, so we **reject** the null hypothesis of no association between disease status and number of major vessels colored by flouroscopy.  
   
-## 9 - Restecg
-   
+## 9 - Restecg  
+    
 Is restecg (resting ECG) different based on disease status? (Is there a significant difference in restecg between diseased and non-diseased groups?)
 
 ### Distribution of restecg based on target groups(disease status)
